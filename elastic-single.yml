@@ -1,0 +1,93 @@
+# https://stackoverflow.com/questions/57495282/how-to-enable-tls-in-elasticsearch-non-interactively
+# https://www.youtube.com/watch?v=i4T1PNQZsiY
+# curl -u elastic:elastic  -X GET "localhost:9200/_cluster/health?pretty"
+---
+- name: Elasticsearch
+  hosts: elastic
+  become: yes
+  vars:
+    elasticsearch_path_home: /usr/share/elasticsearch
+    elasticsearch_path_etc: /etc/elasticsearch
+    elasticsearch_tls_cert_dir: certs
+    elasticsearch_user: elasticsearch
+    elasticsearch_user_group: elasticsearch
+    elasticsearch_tls_cert_pass: ""
+  tasks:
+    - name: APT GET UPDATE
+      apt:
+        update_cache: yes
+    - name: Install latest version of "openjdk-11-jdk" ignoring "install-recommends"
+      apt:
+        name: openjdk-11-jdk
+        state: latest
+    - name: Install latest version of "openjdk-11-jre" ignoring "install-recommends"
+      apt:
+        name: openjdk-11-jre
+        state: latest
+    - name: SET JAVA_HOME environment
+      shell: echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/" >> /etc/environment
+    - name: Install apt-transport-https
+      apt:
+        name: apt-transport-https
+        state: latest
+    - name: Download ELK
+      shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    - name: update
+      shell: add-apt-repository "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+    - name: APT GET UPDATE
+      apt:
+        update_cache: yes
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch
+        state: latest
+    - name: enable service ElasticSearch
+      systemd:
+        name: elasticsearch
+        enabled: yes
+        masked: no
+    - name: Copy elasticsearch Configuration
+      template:
+        src: ./template/elasticsearch.yml.j2
+        dest: "{{ elasticsearch_path_etc }}/elasticsearch.yml"
+    - name: Enable /etc/default/elasticsearch
+      replace:
+        path: /etc/default/elasticsearch
+        regexp: '#MAX_LOCKED_MEMORY=unlimited'
+        replace: 'MAX_LOCKED_MEMORY=unlimited'
+    - name: Enable /etc/default/elasticsearch
+      lineinfile:
+        path: /usr/lib/systemd/system/elasticsearch.service
+        line: LimitMEMLOCK=infinity
+        insertafter: 'LimitFSIZE=infinity'
+    - name: Daemon RELOAD
+      shell: systemctl daemon-reload
+    - name: Create a certificate directory
+      file:
+        owner: root
+        group: '{{ elasticsearch_user_group }}'
+        path: '{{ elasticsearch_path_etc }}/{{ elasticsearch_tls_cert_dir }}'
+        mode: u=rwx,g+rx,o-rwx
+        state: directory
+      when: elasticsearch_tls_cert_dir is defined
+- hosts: master
+  become: yes
+  tasks:
+    - name: Generate CA
+      command: "/usr/share/elasticsearch/bin/elasticsearch-certutil ca --pass ''"
+    - name: Install Kibana
+      apt:
+        name: kibana
+        state: latest
+    - name: enable service Kibana
+      systemd:
+        name: Kibana
+        enabled: yes
+        masked: no
+    - name: Daemon RELOAD
+      shell: systemctl daemon-reload
+#      ./bin/elasticsearch-setup-passwords interactive
+#     scp /usr/share/elasticsearch/elastic-certificates.p12 user@192.168.1.10X:/home/user
+- name: Import Write
+  import_playbook: elastic-write.yml
+...

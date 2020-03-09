@@ -1,0 +1,22 @@
+#https://www.elastic.co/es/blog/configuring-ssl-tls-and-https-to-secure-elasticsearch-kibana-beats-and-logstash#step-2-4
+cluster.name: cluster
+node.name: master
+#node.master: true
+#node.data: true
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: ["localhost", "192.168.1.106"]
+discovery.seed_host: ["192.168.1.106", "192.168.1.107", "192.168.1.108"]
+cluster.initial_master_nodes: ["192.168.1.106", "192.168.1.107", "192.168.1.108"]
+discovery.zen.ping.unicast.hosts: ["192.168.1.106", "192.168.1.107", "192.168.1.108"]
+bootstrap.memory_lock: true
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: /etc/elasticsearch/certs/elastic-slave01.p12
+xpack.security.transport.ssl.truststore.path: /etc/elasticsearch/certs/elastic-slave01.p12
+
+#xpack.security.http.ssl.enabled: true
+#xpack.security.http.ssl.keystore.path: /etc/elasticsearch/certs/elastic-slave01.p12
+#xpack.security.http.ssl.truststore.path: /etc/elasticsearch/certs/elastic-slave01.p12
+#xpack.security.http.ssl.client_authentication: optional

@@ -1,0 +1,28 @@
+# https://www.youtube.com/watch?v=i4T1PNQZsiY
+- hosts: es01
+  become: yes
+  tasks:
+    - name: Node Name
+      replace:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'node.name: master'
+        replace: 'node.name: es01'
+    - name: Node Network
+      replace:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '192.168.1.106'
+        replace: '192.168.1.107'
+- hosts: es02
+  become: yes
+  tasks:
+    - name: Node Name
+      replace:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'node.name: master'
+        replace: 'node.name: es02'
+    - name: Node Network
+      replace:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '192.168.1.106'
+        replace: '192.168.1.108'
+...
